@@ -1,8 +1,6 @@
 from typing import List
-import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
-from torch._C import set_flush_denormal
 
 matplotlib.use('AGG')
 
@@ -26,21 +24,18 @@ class Model_Perform_Tool(object):
     def save_history_csv(self):
         import pandas as pd
 
-        # <<<set the name that won't let program auto cover it~~>>>
-        name_mark = str(self.test_acc_ls[-1])[2:5]
-
         df = pd.DataFrame(
             {
                 'EPOCH': range(1, self.num_epoch + 1),
-                'train_acc': self.train_acc_ls,
-                'train_loss': self.train_loss_ls,
-                'test_acc': self.test_acc_ls,
+                'train_acc': self.train_acc_ls if self.train_acc_ls is not None else [],
+                'train_loss': self.train_loss_ls if self.train_loss_ls is not None else [],
+                'test_acc': self.test_acc_ls if self.test_acc_ls is not None else [],
+                'test_loss': self.test_loss_ls if self.test_loss_ls is not None else [],
             }
         )
-        df.to_csv(f'{self.saveDir}/{name_mark}_history.csv')
+        df.to_csv(f'{self.saveDir}/e{self.num_epoch}_history.csv')
 
     def draw_plot(self, startNumEpoch: int = 10):
-        name_mark = str(self.train_loss_ls[-1])[:5]
         epochs = range(startNumEpoch + 1, self.num_epoch + 1)
         plt.clf()
 
@@ -55,8 +50,7 @@ class Model_Perform_Tool(object):
                     for epoch, value in zip(epochs, values):
                         i += 1
                         if i % (self.num_epoch // 5) == 0 or i == self.num_epoch or best_value == value:
-                            value = np.round(value, 4)
-                            plt.text(epoch, value, value, ha='center', va=('bottom' if idx == 0 else 'top'), fontsize=10)
+                            plt.text(epoch, value, f'{value:.3e}', ha='center', va=('bottom' if idx == 0 else 'top'), fontsize=10)
 
             if [True for values in values_ls if values is not None]:
                 # 設定圖片標題，以及指定字型設定，x代表與圖案最左側的距離，y代表與圖片的距離
@@ -68,5 +62,5 @@ class Model_Perform_Tool(object):
                 plt.xlabel('Epoch', fontsize=10)
                 # 標示y軸(labelpad代表與圖片的距離)
                 plt.ylabel(key, fontsize=10)
-                plt.savefig(f'{self.saveDir}/{name_mark}{key}.png')
+                plt.savefig(f'{self.saveDir}/e{self.num_epoch}_{key}.png')
                 plt.clf()
