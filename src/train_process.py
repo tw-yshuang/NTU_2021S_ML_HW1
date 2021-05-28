@@ -29,21 +29,21 @@ class DL_Performance(object):
         if len(self.val_loss_ls) > epoch:  # avoid error that doesn't have validation in pre-train process.
             if len(self.val_acc_ls) > epoch:
                 val_acc = (
-                    str_format(f'{self.val_acc_ls[epoch]:.7f}', fore='y')
+                    str_format(f'{self.val_acc_ls[epoch]*100:.2f}', fore='y')
                     if self.val_acc_ls[self.best_acc_epoch] == self.val_acc_ls[epoch]
-                    else f'{self.val_acc_ls[epoch]:.7f}'
+                    else f'{self.val_acc_ls[epoch]*100:.2f}'
                 )
                 val_word += f"Val acc: {val_acc}, "
 
             val_loss = (
-                str_format(f'{self.val_loss_ls[epoch]:.7f}', fore='y')
+                str_format(f'{self.val_loss_ls[epoch]:.5e}', fore='y')
                 if self.val_loss_ls[self.best_loss_epoch] == self.val_loss_ls[epoch]
-                else f'{self.val_loss_ls[epoch]:.7f}'
+                else f'{self.val_loss_ls[epoch]:.5e}'
             )
             val_word += f"loss: {val_loss}"
 
-        train_word = f"Train acc: {self.train_acc_ls[epoch]:.7f}, " if len(self.train_acc_ls) > epoch else "Train "
-        train_word += f"loss: {self.train_loss_ls[epoch]:.7f}"
+        train_word = f"Train acc: {self.train_acc_ls[epoch]*100:.2f}, " if len(self.train_acc_ls) > epoch else "Train "
+        train_word += f"loss: {self.train_loss_ls[epoch]:.5e}"
 
         print(f"[{epoch+1:>2d}/{total_epoch}] {time.time() - time_start:.3f}sec, {train_word}{val_word}", end=end)
 
@@ -56,7 +56,7 @@ class DL_Performance(object):
             saveDir,
         )
         if generatePlot:
-            self.visualize.draw_plot(startNumEpoch=len(self.train_loss_ls) // 10)
+            self.visualize.draw_plot(startNumEpoch=len(self.train_loss_ls) // 5)
             print(str_format("Compelete generate plot !!", fore='g'))
         if generateCSV:
             self.visualize.save_history_csv()
@@ -65,12 +65,17 @@ class DL_Performance(object):
 
 class DL_Model(DL_Config):
     def __init__(self, device: str = 'cuda:0') -> None:
-        super().__init__()
+        try:  # form pre-train model
+            self.performance = self.performance
+        except AttributeError:  # new model
+            super().__init__()
+            self.performance = DL_Performance()
 
         self.device = device
-        self.performance = DL_Performance()
+
         if self.saveModel:
-            self.saveDir = f'{self.saveDir}{time.strftime("%m%d-%H%M")}'
+            # generate directory by '{date}-{time}_{model}_{loss-function}_{optimizer}_{lr}_{batch-size}'
+            self.saveDir = f'{self.saveDir}{time.strftime("%m%d-%H%M")}_{self.net.__class__.__name__}_{self.loss_func.__class__.__name__}_lr-{self.optimizer.defaults["lr"]:.1e}_BS-{self.BATCH_SIZE}'
 
         self.epoch_start = len(self.performance.train_loss_ls)
         self.TOTAL_EPOCH = self.epoch_start + self.NUM_EPOCH
@@ -123,7 +128,18 @@ class DL_Model(DL_Config):
                 self.saveModel = True
                 self.save_process()
 
+            # early stop
+            if self.earlyStop is not None:
+                # self.epoch_start = self.epoch
+                self.TOTAL_EPOCH = self.earlyStop
+                # self.earlyStop = None
+                # self.training(loader, val_loader)
+                self.save_process()
+                self.performance.visualize_info(generatePlot=self.savePlot, saveDir=self.saveDir)
+                return
+
         self.performance.visualize_info(generatePlot=self.savePlot, saveDir=self.saveDir)
+        return
 
     def valiating(self, loader: DataLoader):
         num_right = 0
@@ -186,17 +202,17 @@ class DL_Model(DL_Config):
             raise OSError(str_format(f"Fail to create the directory {self.saveDir} !", fore='r'))
 
         # final epoch
-        if self.epoch + 1 == self.NUM_EPOCH:
-            self.save_model(f'{self.saveDir}/final_e{self.epoch+1:03d}_{self.val_loss:.6f}.pickle')
+        if self.epoch + 1 == self.TOTAL_EPOCH:
+            self.save_model(f'{self.saveDir}/final_e{self.epoch+1:03d}_{self.val_loss:.3e}.pickle')
         # checkpoint
         if self.checkpoint > 0 and self.epoch % self.checkpoint == 0:
-            self.save_model(f'{self.saveDir}/e{self.epoch+1:03d}_{self.val_loss:.6f}.pickle')
+            self.save_model(f'{self.saveDir}/e{self.epoch+1:03d}_{self.val_loss:.3e}.pickle')
         # best model
         if self.bestModelSave and self.epoch > 0:
             for key, best_epoch in {'acc': self.performance.best_acc_epoch, 'loss': self.performance.best_loss_epoch}.items():
                 if self.epoch == best_epoch:
                     [os.remove(filename) for filename in glob.glob(f'{self.saveDir}/best-{key}*.pickle')]
-                    self.save_model(f'{self.saveDir}/best-{key}_e{self.epoch+1:03d}_{self.val_loss:.6f}.pickle')
+                    self.save_model(f'{self.saveDir}/best-{key}_e{self.epoch+1:03d}_{self.val_loss:.3e}.pickle')
 
     def save_model(self, path):
         if self.onlyParameters:
@@ -211,10 +227,13 @@ class DL_Model(DL_Config):
         else:
             torch.save(self, path)
 
+    # TODO: fix pre-training will reset model problem line 69.
     def load_model(self, path, fullNet=False):
         model: DL_Model = torch.load(path)
-        self.saveDir = path[: path.rfind('/')]
         self.performance = model.performance
+        self.saveDir = path[: path.rfind('/') + 1]
+
+        self.__init__()
 
         if fullNet:
             self.net = model.net

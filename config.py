@@ -20,8 +20,9 @@ class DL_Config(object):
 
     def basic_config(self):
         self.SEED: int = 24
-        self.NUM_EPOCH: int = 410
-        self.BATCH_SIZE: int = 128
+        self.NUM_EPOCH: int = 2800
+        self.BATCH_SIZE: int = 512
+        self.earlyStop: int or None = None
 
         np.random.seed(self.SEED)
         torch.manual_seed(self.SEED)
@@ -30,7 +31,7 @@ class DL_Config(object):
 
     def net_config(self):
         self.isClassified = False
-        self.net = net.Net_01(93).to(get_device())
+        self.net = net.Net04(93).to(get_device())
         self.loss_func = nn.MSELoss(reduction='mean')
         self.optimizer = torch.optim.SGD(self.net.parameters(), lr=1e-4, momentum=0.9)
         self.min_MES = 1000.0
@@ -38,11 +39,11 @@ class DL_Config(object):
     def performance_config(self):
         self.printPerformance: bool = True
         self.showPlot: bool = True
-        self.savePerformance: str = None
-        self.savePlot: str = True
+        self.savePerformance: bool = True
+        self.savePlot: bool = True
 
     def save_config(self):
-        self.saveDir = './out/'
+        self.saveDir = './out/test/'
         self.saveModel = True
         self.checkpoint = 0
         self.bestModelSave = True
