@@ -132,14 +132,14 @@ class DL_Model(DL_Config):
             if self.earlyStop is not None:
                 # self.epoch_start = self.epoch
                 self.TOTAL_EPOCH = self.earlyStop
+                # TODO: there has something better earlyStop method!! need to find out, go go:!!
                 # self.earlyStop = None
                 # self.training(loader, val_loader)
                 self.save_process()
-                self.performance.visualize_info(generatePlot=self.savePlot, saveDir=self.saveDir)
-                return
+                break
 
         self.performance.visualize_info(generatePlot=self.savePlot, saveDir=self.saveDir)
-        return
+        return True
 
     def valiating(self, loader: DataLoader):
         num_right = 0
@@ -180,7 +180,7 @@ class DL_Model(DL_Config):
         self.net.eval()
         result_ls = np.array([])
         with no_grad():
-            for i, dataset in enumerate(loader):
+            for dataset in loader:
                 data = dataset.to(self.device)
 
                 pred = self.net(data).cpu()
@@ -227,7 +227,6 @@ class DL_Model(DL_Config):
         else:
             torch.save(self, path)
 
-    # TODO: fix pre-training will reset model problem line 69.
     def load_model(self, path, fullNet=False):
         model: DL_Model = torch.load(path)
         self.performance = model.performance
