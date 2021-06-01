@@ -74,8 +74,12 @@ class DL_Model(DL_Config):
         self.device = device
 
         if self.saveModel:
+            # loss_func is from pytorch api or make it by self.
+            loss_func_name = (
+                self.loss_func.__class__.__name__ if self.loss_func.__class__.__name__ != 'function' else self.loss_func.__name__
+            )
             # generate directory by '{date}-{time}_{model}_{loss-function}_{optimizer}_{lr}_{batch-size}'
-            self.saveDir = f'{self.saveDir}{time.strftime("%m%d-%H%M")}_{self.net.__class__.__name__}_{self.loss_func.__class__.__name__}_lr-{self.optimizer.defaults["lr"]:.1e}_BS-{self.BATCH_SIZE}'
+            self.saveDir = f'{self.saveDir}{time.strftime("%m%d-%H%M")}_{self.net.__class__.__name__}_{loss_func_name}_lr-{self.optimizer.defaults["lr"]:.1e}_BS-{self.BATCH_SIZE}'
 
         self.epoch_start = len(self.performance.train_loss_ls)
         self.TOTAL_EPOCH = self.epoch_start + self.NUM_EPOCH
