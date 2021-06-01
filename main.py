@@ -60,5 +60,3 @@ if __name__ == '__main__':
     main()
     # pre_training()
     # test()
-
-    # asyncio.run_coroutine_threadsafe(test())

@@ -39,7 +39,7 @@ class DL_Config(object):
     def performance_config(self):
         self.printPerformance: bool = True
         self.showPlot: bool = True
-        self.savePerformance: bool = False  # TODO: wait to added in the function
+        self.savePerformance: bool = True
         self.savePlot: bool = True
 
     def save_config(self):

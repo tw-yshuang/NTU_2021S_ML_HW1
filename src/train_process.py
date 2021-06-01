@@ -118,10 +118,11 @@ class DL_Model(DL_Config):
 
             if self.printPerformance:
                 if val_loader is not None:
-                    self.performance.print(self.epoch, self.TOTAL_EPOCH, start_time, end='\r')
+                    self.performance.print(self.epoch, self.TOTAL_EPOCH, start_time, end='\r')  # print training info. first~
                     self.valiating(val_loader)
-
-                self.performance.print(self.epoch, self.TOTAL_EPOCH, start_time)
+                self.performance.print(self.epoch, self.TOTAL_EPOCH, start_time)  # print all info.~
+            elif val_loader is not None:
+                self.valiating(val_loader)
 
             # save model
             if self.saveModel or saveModel:
@@ -166,7 +167,6 @@ class DL_Model(DL_Config):
                     num_right += sum(pred_label == label.numpy())
 
             # valiation info. record
-            # loader.sampler.num_samples
             self.val_loss = sum_loss / len(loader.dataset)
             self.performance.val_loss_ls.append(self.val_loss)
             if self.performance.val_loss_ls[self.performance.best_loss_epoch] > self.val_loss:
@@ -218,7 +218,6 @@ class DL_Model(DL_Config):
 
     def save_model(self, path):
         if self.onlyParameters:
-            # torch.save(self.net.state_dict(), path)
             net = self.net
             optimizer = self.optimizer
             self.net = self.net.state_dict()

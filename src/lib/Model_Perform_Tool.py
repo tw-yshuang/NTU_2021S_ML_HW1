@@ -29,10 +29,10 @@ class Model_Perform_Tool(object):
         df = pd.DataFrame(
             {
                 'EPOCH': range(1, self.num_epoch + 1),
-                'train_acc': self.train_acc_ls if self.train_acc_ls is not None else [],
-                'train_loss': self.train_loss_ls if self.train_loss_ls is not None else [],
-                'test_acc': self.test_acc_ls if self.test_acc_ls is not None else [],
-                'test_loss': self.test_loss_ls if self.test_loss_ls is not None else [],
+                'train_acc': self.train_acc_ls if self.train_acc_ls is not None else [None] * self.num_epoch,
+                'train_loss': self.train_loss_ls if self.train_loss_ls is not None else [None] * self.num_epoch,
+                'test_acc': self.test_acc_ls if self.test_acc_ls is not None else [None] * self.num_epoch,
+                'test_loss': self.test_loss_ls if self.test_loss_ls is not None else [None] * self.num_epoch,
             }
         )
         df.to_csv(f'{self.saveDir}/e{self.num_epoch}_history.csv')
