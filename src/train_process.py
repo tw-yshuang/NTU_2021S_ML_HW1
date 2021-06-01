@@ -47,7 +47,7 @@ class DL_Performance(object):
 
         print(f"[{epoch+1:>2d}/{total_epoch}] {time.time() - time_start:.3f}sec, {train_word}{val_word}", end=end)
 
-    def visualize_info(self, generatePlot=True, generateCSV=False, saveDir: str or None = './out'):
+    def visualize_info(self, showPlot: bool = False, savePlot: bool = True, saveCSV: bool = True, saveDir: str or None = './out'):
         self.visualize = Model_Perform_Tool(
             self.train_loss_ls,
             self.val_loss_ls,
@@ -55,10 +55,10 @@ class DL_Performance(object):
             self.val_acc_ls if self.val_acc_ls != [] else None,
             saveDir,
         )
-        if generatePlot:
-            self.visualize.draw_plot(startNumEpoch=len(self.train_loss_ls) // 5)
+        if showPlot or savePlot:
+            self.visualize.draw_plot(startNumEpoch=len(self.train_loss_ls) // 5, isShow=showPlot, isSave=savePlot)
             print(str_format("Compelete generate plot !!", fore='g'))
-        if generateCSV:
+        if saveCSV:
             self.visualize.save_history_csv()
             print(str_format("Compelete generate csv !!", fore='g'))
 
@@ -138,7 +138,9 @@ class DL_Model(DL_Config):
                 self.save_process()
                 break
 
-        self.performance.visualize_info(generatePlot=self.savePlot, saveDir=self.saveDir)
+        self.performance.visualize_info(
+            showPlot=self.showPlot, savePlot=self.savePlot, saveCSV=self.savePerformance, saveDir=self.saveDir
+        )
         return True
 
     def valiating(self, loader: DataLoader):

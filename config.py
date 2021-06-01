@@ -20,7 +20,7 @@ class DL_Config(object):
 
     def basic_config(self):
         self.SEED: int = 24
-        self.NUM_EPOCH: int = 2800
+        self.NUM_EPOCH: int = 1000
         self.BATCH_SIZE: int = 512
         self.earlyStop: int or None = None
 
@@ -39,7 +39,7 @@ class DL_Config(object):
     def performance_config(self):
         self.printPerformance: bool = True
         self.showPlot: bool = True
-        self.savePerformance: bool = True
+        self.savePerformance: bool = False  # TODO: wait to added in the function
         self.savePlot: bool = True
 
     def save_config(self):
