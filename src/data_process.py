@@ -5,15 +5,14 @@ from torch.utils.data import Dataset, DataLoader
 
 
 class COVID19Dataset(Dataset):
-    def __init__(self, path: str, mode='train', haveLabel=False) -> None:
+    def __init__(self, path: str, mode='train') -> None:
         self.mode = mode
 
         with open(path, 'r') as f:
             data = list(csv.reader(f))
             data = np.array(data[1:])[:, 1:].astype(float)
 
-        if haveLabel:
-            feats = range(93)
+        feats = range(93)
 
         if mode == 'test':
             # Testing data
@@ -28,9 +27,11 @@ class COVID19Dataset(Dataset):
 
             # Splitting training data into train & valid sets
             if mode == 'train':
-                indices = [i for i in range(data.shape[0]) if i % 10 != 0]
+                indices = [i for i in range(data.shape[0]) if i % 10 > 2]
             elif mode == 'valid':
-                indices = [i for i in range(data.shape[0]) if i % 10 == 0]
+                indices = [i for i in range(data.shape[0]) if i % 10 <= 2]
+            elif mode == 'full':
+                indices = range(data.shape[0])
 
             # Convert data into PyTorch tensors
             self.data = torch.FloatTensor(data[indices])
@@ -60,14 +61,14 @@ class COVID19Dataset(Dataset):
         return len(self.data)
 
 
-def get_dataloader(path, mode, batch_size, n_jobs=1, haveLabel=False):
+def get_dataloader(path, mode, batch_size, n_jobs=1):
     '''Generates a dataset, then is put into a dataloader.
     mode: 'train', 'vaild', 'test' '''
-    dataset = COVID19Dataset(path, mode=mode, haveLabel=haveLabel)  # Construct dataset
+    dataset = COVID19Dataset(path, mode=mode)  # Construct dataset
     dataloader = DataLoader(
         dataset,
         batch_size,
-        shuffle=(mode == 'train'),
+        shuffle=(mode == 'train' or mode == 'full'),
         drop_last=False,
         num_workers=n_jobs,
         pin_memory=False,

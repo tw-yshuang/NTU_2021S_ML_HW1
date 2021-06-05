@@ -27,6 +27,7 @@ class DL_Performance(object):
 
         val_word = " | "
         if len(self.val_loss_ls) > epoch:  # avoid error that doesn't have validation in pre-train process.
+            val_word += 'Val '
             if len(self.val_acc_ls) > epoch:
                 val_acc = (
                     str_format(f'{self.val_acc_ls[epoch]*100:.2f}', fore='y')
@@ -50,7 +51,7 @@ class DL_Performance(object):
     def visualize_info(self, showPlot: bool = False, savePlot: bool = True, saveCSV: bool = True, saveDir: str or None = './out'):
         self.visualize = Model_Perform_Tool(
             self.train_loss_ls,
-            self.val_loss_ls,
+            self.val_loss_ls if self.val_loss_ls != [] else None,
             self.train_acc_ls if self.train_acc_ls != [] else None,
             self.val_acc_ls if self.val_acc_ls != [] else None,
             saveDir,
@@ -189,10 +190,11 @@ class DL_Model(DL_Config):
             for dataset in loader:
                 data = dataset.to(self.device)
 
-                pred = self.net(data).cpu()
-                results = torch.argmax(pred, dim=1).numpy()
+                results = self.net(data).cpu()
+                if self.isClassified:
+                    results = torch.argmax(results, dim=1).numpy()
 
-                result_ls = np.concatenate((result_ls, results), axis=0).astype('int8')
+                result_ls = np.concatenate((result_ls, results), axis=0)
 
             return result_ls
 
@@ -207,18 +209,20 @@ class DL_Model(DL_Config):
         except OSError:
             raise OSError(str_format(f"Fail to create the directory {self.saveDir} !", fore='r'))
 
+        # make a parameter mark for model name, if has val_loader in the epoch, use val_loss, else use train_loss
+        model_parameter_mark = self.val_loss if self.val_loss != 0.0 else self.train_loss
         # final epoch
         if self.epoch + 1 == self.TOTAL_EPOCH:
-            self.save_model(f'{self.saveDir}/final_e{self.epoch+1:03d}_{self.val_loss:.3e}.pickle')
+            self.save_model(f'{self.saveDir}/final_e{self.epoch+1:03d}_{model_parameter_mark:.3e}.pickle')
         # checkpoint
-        if self.checkpoint > 0 and self.epoch % self.checkpoint == 0:
-            self.save_model(f'{self.saveDir}/e{self.epoch+1:03d}_{self.val_loss:.3e}.pickle')
+        elif self.checkpoint > 0 and (self.epoch + 1) % self.checkpoint == 0:
+            self.save_model(f'{self.saveDir}/e{self.epoch+1:03d}_{model_parameter_mark:.3e}.pickle')
         # best model
         if self.bestModelSave and self.epoch > 0:
             for key, best_epoch in {'acc': self.performance.best_acc_epoch, 'loss': self.performance.best_loss_epoch}.items():
                 if self.epoch == best_epoch:
                     [os.remove(filename) for filename in glob.glob(f'{self.saveDir}/best-{key}*.pickle')]
-                    self.save_model(f'{self.saveDir}/best-{key}_e{self.epoch+1:03d}_{self.val_loss:.3e}.pickle')
+                    self.save_model(f'{self.saveDir}/best-{key}_e{self.epoch+1:03d}_{model_parameter_mark:.3e}.pickle')
 
     def save_model(self, path):
         if self.onlyParameters:
@@ -235,6 +239,8 @@ class DL_Model(DL_Config):
     def load_model(self, path, fullNet=False):
         model: DL_Model = torch.load(path)
         self.performance = model.performance
+        self.performance.best_acc_epoch = 0
+        self.performance.best_loss_epoch = 0
         self.saveDir = path[: path.rfind('/') + 1]
 
         self.__init__()
