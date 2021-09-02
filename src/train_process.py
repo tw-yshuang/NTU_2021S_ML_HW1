@@ -123,10 +123,10 @@ class DL_Model(DL_Config):
             if self.printPerformance:
                 if val_loader is not None:
                     self.performance.print(self.epoch, self.TOTAL_EPOCH, start_time, end='\r')  # print training info. first~
-                    self.valiating(val_loader)
+                    self.validating(val_loader)
                 self.performance.print(self.epoch, self.TOTAL_EPOCH, start_time)  # print all info.~
             elif val_loader is not None:
-                self.valiating(val_loader)
+                self.validating(val_loader)
 
             # save model
             if self.saveModel or saveModel:
@@ -148,7 +148,7 @@ class DL_Model(DL_Config):
         )
         return True
 
-    def valiating(self, loader: DataLoader):
+    def validating(self, loader: DataLoader):
         num_right = 0
         sum_loss = 0.0
 
@@ -158,10 +158,9 @@ class DL_Model(DL_Config):
                 data = data.to(self.device)
                 label = label.cpu()
 
-                # valiating process
+                # validating process
                 pred = self.net(data).cpu()
                 loss = self.loss_func(pred, label)
-                self.optimizer.step()
 
                 # calculate loss
                 sum_loss += loss.item()
