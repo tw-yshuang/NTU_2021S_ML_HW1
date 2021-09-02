@@ -27,7 +27,6 @@ class DL_Performance(object):
 
         val_word = " | "
         if len(self.val_loss_ls) > epoch:  # avoid error that doesn't have validation in pre-train process.
-            val_word += 'Val '
             if len(self.val_acc_ls) > epoch:
                 val_acc = (
                     str_format(f'{self.val_acc_ls[epoch]*100:.2f}', fore='y')
@@ -111,7 +110,7 @@ class DL_Model(DL_Config):
                 sum_loss += loss.item()
 
                 if self.isClassified:
-                    pred_result = torch.argmax(pred).numpy()
+                    pred_result = torch.argmax(pred, dim=1).numpy()
                     num_right += sum(pred_result == label.numpy())
 
             self.train_loss = sum_loss / len(loader.dataset)
